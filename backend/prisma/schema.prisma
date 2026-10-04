@@ -2,11 +2,56 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+
+  // Relasi: satu user bisa punya banyak habit
+  habits    Habit[]
+}
+
+model Habit {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String?
+  color       String       @default("#22c55e")
+  userId      Int
+
+  // Relasi: satu habit dimiliki oleh satu user
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relasi: satu habit punya banyak completion (checklist harian)
+  completions Completion[]
+
+  createdAt   DateTime     @default(now())
+
+  // Index mempercepat pencarian habit berdasarkan user
+  @@index([userId])
+}
+
+model Completion {
+  id      Int    @id @default(autoincrement())
+  date    String
+
+  habitId Int
+
+  // Relasi: satu completion milik satu habit
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  // Mencegah duplikasi checklist untuk habit yang sama di tanggal yang sama
+  @@unique([habitId, date])
+
+  // Index mempercepat query completion berdasarkan habit
+  @@index([habitId])
 }
